@@ -1,0 +1,9 @@
+mqtt:
+  broker: "tcp://localhost:1883"
+  client_id: "vehicle_simulator"
+  username: ""
+  password: ""
+vehicles:
+  - vehicle_1
+  - vehicle_2
+  - vehicle_3

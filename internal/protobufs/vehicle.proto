@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package vehicle;
 
-option go_package = "internal/proto/vehicle";
+option go_package = "internal/protobufs/vehicle";
 
 import "google/protobuf/timestamp.proto";
 
