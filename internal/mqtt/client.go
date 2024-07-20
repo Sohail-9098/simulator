@@ -29,6 +29,7 @@ func (c *Client) Connect() {
 }
 
 func (c *Client) Disconnect() {
+	log.Println("Disconnecting Client")
 	c.client.Disconnect(250)
 }
 

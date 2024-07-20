@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Sohail-9098/simulator/internal/mqtt"
@@ -13,6 +16,12 @@ import (
 
 const (
 	CONFIG_FILE_PATH = "../../config/config.yaml"
+)
+
+var (
+	isPublishing bool
+	stopCh       chan struct{}
+	mu           sync.Mutex
 )
 
 type Config struct {
@@ -36,6 +45,47 @@ func loadConfig(filename string) (*Config, error) {
 }
 
 func main() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go HandleUserInput()
+	<-sigs
+	fmt.Println("exiting")
+}
+
+func HandleUserInput() {
+	for {
+		var input int
+		fmt.Println("Press 1 and Enter to start publish")
+		fmt.Scanln(&input)
+
+		mu.Lock()
+		if input == 1 {
+			if isPublishing {
+				fmt.Println("Already Publishing")
+			} else {
+				stopCh = make(chan struct{})
+				isPublishing = true
+				go func() {
+					StartPublishing()
+					mu.Lock()
+					isPublishing = false
+					mu.Unlock()
+				}()
+			}
+		} else {
+			if isPublishing {
+				close(stopCh)
+				isPublishing = false
+				fmt.Println("Publish Stop")
+			} else {
+				fmt.Println("Currently not publishing")
+			}
+		}
+		mu.Unlock()
+	}
+}
+
+func StartPublishing() {
 	// Load config
 	config, err := loadConfig(CONFIG_FILE_PATH)
 	if err != nil {
@@ -45,17 +95,22 @@ func main() {
 	mqttClient := mqtt.NewClient(config.MQTT.Broker, config.MQTT.ClientID, config.MQTT.Username, config.MQTT.Password)
 	mqttClient.Connect()
 	defer mqttClient.Disconnect()
-
 	for {
-		for _, vehicleID := range config.Vehicles {
-			telemetryData := telemetry.GenerateTelemetry(vehicleID)
-			topic := fmt.Sprintf("vehicles/%s/telemetry", vehicleID)
-			log.Printf("publishing telemetry data for %s", vehicleID)
-			err := mqttClient.PublishTelemetry(topic, telemetryData)
-			if err != nil {
-				log.Printf("failed to publish telemetry data for %s: %v", vehicleID, err)
+		select {
+		case <-stopCh:
+			log.Println("Stopping Publish")
+			return
+		default:
+			for _, vehicleID := range config.Vehicles {
+				telemetryData := telemetry.GenerateTelemetry(vehicleID)
+				topic := fmt.Sprintf("vehicles/%s/telemetry", vehicleID)
+				fmt.Println("publish : ", vehicleID)
+				err := mqttClient.PublishTelemetry(topic, telemetryData)
+				if err != nil {
+					log.Printf("failed to publish telemetry data for %s: %v", vehicleID, err)
+				}
 			}
+			time.Sleep(time.Second)
 		}
-		time.Sleep(time.Second)
 	}
 }
