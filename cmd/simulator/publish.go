@@ -10,13 +10,10 @@ import (
 	"github.com/Sohail-9098/simulator/internal/telemetry"
 )
 
-const (
-	CONFIG_FILE_PATH = "../../config/config.yaml"
-)
-
 func startPublish() {
+	vehicles := []string{"vehicle_1", "vehicle_2", "vehicle_3"}
 	// Load config
-	config, err := config.LoadConfig(CONFIG_FILE_PATH)
+	config, err := config.New()
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
@@ -30,7 +27,7 @@ func startPublish() {
 			log.Println("Stopping Publish")
 			return
 		default:
-			for _, vehicleID := range config.Vehicles {
+			for _, vehicleID := range vehicles {
 				telemetryData := telemetry.GenerateTelemetry(vehicleID)
 				topic := fmt.Sprintf("vehicles/%s/telemetry", vehicleID)
 				fmt.Println("publish : ", vehicleID)
