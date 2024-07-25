@@ -1,0 +1,6 @@
+Create a secret
+
+secretname : "vehicle/vehicle-simulator/mqtt/credentials"
+
+aws secretsmanager create-secret --name "vehicle/vehicle-simulator/mqtt/credentials" \
+--secret-string '{"client_id":"vehicle_simulator","username":"my_username","password":"my_password"}'
