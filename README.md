@@ -1,19 +1,20 @@
 # Vehicle Data Simulator
 
-The Vehicle Data Simulator is a tool designed to simulate the telemetry data of multiple vehicles and publish it to an MQTT broker. This can be useful for testing and developing applications that consume MQTT messages.
+The Vehicle Data Simulator is a powerful tool designed to simulate the telemetry data of multiple vehicles and publish it to an MQTT broker. It's ideal for testing and developing applications that consume MQTT messages.
 
 ## Features
 
 - Simulates telemetry data for multiple vehicles.
 - Publishes data to an MQTT broker.
-- Configurable via a YAML configuration file.
-- Handles starting and stopping of data publishing via a simple command-line interface.
+- Configurable via AWS secrets.
+- Simple command-line interface for starting and stopping data publishing.
+- Dockerfile included for containerized deployment.
 
 ## Prerequisites
 
 - **Go 1.18+**: Ensure you have Go installed. You can download it from [golang.org](https://golang.org/dl/).
-- **EMQX MQTT Broker**: A running instance of the EMQX broker. You can download and start it from [EMQX](https://www.emqx.io/).
-- **Mosquitto Client**: For subscribing to MQTT topics, you need the `mosquitto` client. Install it from [Mosquitto](https://mosquitto.org/download/).
+- **EMQX MQTT Broker**: Ensure you have a running instance of the EMQX broker. You can download and start it from [EMQX](https://www.emqx.io/).
+- **Mosquitto Client**: Required for subscribing to MQTT topics. Install it from [Mosquitto](https://mosquitto.org/download/).
 
 ## Installation
 
@@ -34,23 +35,11 @@ The Vehicle Data Simulator is a tool designed to simulate the telemetry data of 
 
 3. **Configure EMQX**
 
-   Ensure your EMQX broker is running and accessible. Default settings are usually fine for local development.
+   Ensure your EMQX broker is running and accessible. Default settings are usually sufficient for local development.
 
 ## Configuration
 
-Create a `config.yaml` file in the `config` directory with the following structure:
-
-```yaml
-mqtt:
-  broker: "tcp://localhost:1883"
-  client_id: "vehicle_simulator"
-  username: ""
-  password: ""
-vehicles:
-  - vehicle1
-  - vehicle2
-  - vehicle3
-```
+Configure your application using AWS secrets instead of a local configuration file. Ensure your AWS secrets are properly set up to store the necessary MQTT broker information.
 
 ## Running the Simulator
 
@@ -64,13 +53,13 @@ vehicles:
 
 2. **Control Publishing**
 
-   The application will prompt you to start or stop publishing:
+   The application will prompt you to control data publishing:
 
    ```plaintext
-   Press 1 and Enter to start publish
+   Press 1 and Enter to start generating and sending telemetry data
+   Press 2 to stop generating and sending
+   Press Ctrl+C to exit
    ```
-
-   Type `1` to start publishing data. Any other key to stop publishing. Press `Ctrl+C` to stop the application.
 
 ## Subscribing to Data
 
@@ -91,9 +80,38 @@ mosquitto_sub -h localhost -t 'vehicles/#'
 ## Troubleshooting
 
 - **No Messages Received**: Ensure the EMQX broker is running and the topic matches exactly.
-- **Configuration Issues**: Verify `config.yaml` and ensure all fields are correctly set.
+- **Configuration Issues**: Verify your AWS secrets configuration.
 - **Logging**: Enable detailed logging in the `main.go` file to trace connection and publishing issues.
+
+## Containerized Deployment
+
+A Dockerfile is included to facilitate containerized deployment. You can build and run the Docker container as follows:
+
+1. **Edit the Dockerfile to Configure AWS Environment Variables**
+
+   Update the Dockerfile with your AWS credentials and MQTT broker details:
+
+   ```Dockerfile
+   ENV MQTT_BROKER_URL="tcp://host.docker.internal:1883" \
+       MQTT_CREDENTIALS_SECRET="vehicle/vehicle-simulator/mqtt/credentials" \
+       AWS_ACCESS_KEY_ID="test" \
+       AWS_SECRET_ACCESS_KEY="test" \
+       AWS_DEFAULT_REGION="us-east-1" \
+       AWS_ENDPOINT_URL="http://host.docker.internal:4566"
+   ```
+
+2. **Build the Docker Image**
+
+   ```sh
+   docker build -t vehicle-simulator .
+   ```
+
+3. **Run the Docker Container**
+
+   ```sh
+   docker run --it vehicle-simulator
+   ```
 
 ---
 
-If you need more information or run into any issues, kindly reach out to me sohailkhan9098@gmail.com
+For more information or if you encounter any issues, feel free to reach out to me at sohailkhan9098@gmail.com.
